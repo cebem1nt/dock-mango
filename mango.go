@@ -151,17 +151,29 @@ func focusWindow(window client) {
 }
 
 func closeWindow(window client) {
-	// TODO, there is no closeid
+	cmd := fmt.Sprintf("dispatch killid, %d", window.Id)
+	reply, _ := mmsg(cmd)
+
+	log.Debugf("%s -> %s", cmd, reply)
 }
 
 func floatWindow(window client) {
-	// TODO, no floatid
+	cmd := fmt.Sprintf("dispatch togglefloatingid, %d", window.Id)
+	reply, _ := mmsg(cmd)
+
+	log.Debugf("%s -> %s", cmd, reply)
 }
 
 func fullscreenWindow(window client) {
-	// TODO, no fullscreen by id
+	cmd := fmt.Sprintf("dispatch togglefullscreenid, %d", window.Id)
+	reply, _ := mmsg(cmd)
+
+	log.Debugf("%s -> %s", cmd, reply)
 }
 
 func moveWindowToWorkspace(window client, workspace int) {
-	// TODO cant tag by id
+	cmd := fmt.Sprintf("dispatch tagid, %d, %d, 0", window.Id, workspace)
+	reply, _ := mmsg(cmd)
+
+	log.Debugf("%s -> %s", cmd, reply)
 }
