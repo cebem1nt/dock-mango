@@ -21,7 +21,7 @@ import (
 func taskInstances(ID string) []client {
 	var found []client
 	for _, c := range clients {
-		if strings.ToUpper(c.Class) == strings.ToUpper(ID) {
+		if strings.ToUpper(c.AppId) == strings.ToUpper(ID) {
 			found = append(found, c)
 		}
 	}
@@ -210,7 +210,7 @@ func taskButton(t client, instances []client, position *string) *gtk.Box {
 
 	button := gtk.NewButton()
 
-	image, _ := createImage(t.Class, imgSizeScaled)
+	image, _ := createImage(t.AppId, imgSizeScaled)
 	if image == nil {
 		pixbuf, err := gdkpixbuf.NewPixbufFromFileAtSize(filepath.Join(dataHome, "nwg-dock-hyprland/images/icon-missing.svg"),
 			imgSizeScaled, imgSizeScaled)
@@ -226,7 +226,7 @@ func taskButton(t client, instances []client, position *string) *gtk.Box {
 		button.SetAlwaysShowImage(true)
 	}
 
-	button.SetTooltipText(getName(t.Class))
+	button.SetTooltipText(getName(t.AppId))
 
 	var img *gtk.Image
 	var pixbuf *gdkpixbuf.Pixbuf
@@ -285,7 +285,7 @@ func taskButton(t client, instances []client, position *string) *gtk.Box {
 					btn.UnsetStateFlags(gtk.StateFlagPrelight)
 				})
 			} else {
-				menu := clientMenu(t.Class, instances)
+				menu := clientMenu(t.AppId, instances)
 				menu.Connect("hide", func() {
 					btn.UnsetStateFlags(gtk.StateFlagPrelight)
 				})
@@ -293,9 +293,9 @@ func taskButton(t client, instances []client, position *string) *gtk.Box {
 				menu.PopupAtWidget(btn, widgetAnchor, menuAnchor, nil)
 			}
 		} else if btnEvent.Button() == 2 {
-			launch(t.Class)
+			launch(t.AppId)
 		} else if btnEvent.Button() == 3 {
-			contextMenu := clientMenuContext(t.Class, instances)
+			contextMenu := clientMenuContext(t.AppId, instances)
 			contextMenu.Connect("hide", func() {
 				btn.UnsetStateFlags(gtk.StateFlagPrelight)
 			})
@@ -336,7 +336,7 @@ func clientMenu(class string, instances []client) gtk.Menu {
 			title = title[:25]
 		}
 		var label *gtk.Label
-		label = gtk.NewLabel(fmt.Sprintf("%s (%v)", title, instance.Workspace.Name))
+		label = gtk.NewLabel(fmt.Sprintf("%s (%v)", title, instance.Tags))
 		hbox.PackStart(label, false, false, 0)
 		menuItem.Add(hbox)
 		menu.Append(menuItem)
@@ -460,7 +460,7 @@ func clientMenuContext(class string, instances []client) gtk.Menu {
 			contextSubMenu := gtk.NewMenu()
 			contextMenuActions(instance, contextSubMenu)
 
-			label := gtk.NewLabel(fmt.Sprintf("%s (%v)", title, instance.Workspace.Name))
+			label := gtk.NewLabel(fmt.Sprintf("%s (%v)", title, instance.Tags))
 			hbox.PackStart(label, false, false, 0)
 			menuItem.Add(hbox)
 			menuItem.SetSubmenu(contextSubMenu)
@@ -490,7 +490,7 @@ func inPinned(taskID string) bool {
 
 func inTasks(pinID string) bool {
 	for _, task := range clients {
-		if strings.TrimSpace(task.Class) == strings.TrimSpace(pinID) {
+		if strings.TrimSpace(task.AppId) == strings.TrimSpace(pinID) {
 			return true
 		}
 	}
@@ -965,8 +965,8 @@ func launch(ID string) {
 		}
 	}
 
-	cmd := fmt.Sprintf("dispatch hl.dsp.exec_cmd('%s')", command)
-	if _, err := hyprctl(cmd); err != nil {
+	cmd := fmt.Sprintf("dispatch spawn, %s", command)
+	if _, err := mmsg(cmd); err != nil {
 		log.Error("Unable to launch command!", err.Error())
 	}
 }

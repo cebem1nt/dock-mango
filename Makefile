@@ -6,19 +6,19 @@ get:
 	go get "github.com/sirupsen/logrus"
 
 build:
-	go build -v -o bin/nwg-dock-hyprland .
+	go build -v -o bin/dock-mango .
 
 install:
-	-pkill -f nwg-dock-hyprland
+	-pkill -f dock-mango
 	sleep 1
-	mkdir -p /usr/share/nwg-dock-hyprland
-	cp -r images /usr/share/nwg-dock-hyprland
-	cp config/* /usr/share/nwg-dock-hyprland
-	cp bin/nwg-dock-hyprland /usr/bin
+	mkdir -p /usr/share/dock-mango
+	cp -r images /usr/share/dock-mango
+	cp config/* /usr/share/dock-mango
+	cp bin/dock-mango /usr/bin
 
 uninstall:
-	rm -r /usr/share/nwg-dock-hyprland
-	rm /usr/bin/nwg-dock-hyprland
+	rm -r /usr/share/dock-mango
+	rm /usr/bin/dock-mango
 
 run:
 	go run .

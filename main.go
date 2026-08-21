@@ -12,7 +12,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"slices"
 	"strconv"
 	"strings"
 	"syscall"
@@ -42,9 +41,7 @@ var (
 	configDirectory                    string
 	dataHome                           string
 	detectorEnteredAt                  int64
-	his                                string // $HYPRLAND_INSTANCE_SIGNATURE
-	hyprDir                            string // $XDG_RUNTIME_DIR/hypr since hyprland>0.39.1, earlier /tmp/hypr
-	ignoredWorkspaces                  []string
+	mangoSocket                        string // $MANGO_INSTANCE_SIGNATURE
 	imgSizeScaled                      int
 	lastWinAddr                        string
 	mainBox                            *gtk.Box
@@ -75,7 +72,6 @@ var ignoreClasses = flag.String("g", "", "quote-delimited, space-separated class
 var hotspotDelay = flag.Int64("hd", 20, "Hotspot Delay [ms]; the smaller, the faster mouse pointer needs to enter hotspot for the dock to appear; set 0 to disable")
 var hotspotLayer = flag.String("hl", "overlay", "Hotspot Layer \"overlay\", \"top\" or \"bottom\"")
 var ico = flag.String("ico", "", "alternative name or path for the launcher ICOn")
-var ignoreWorkspaces = flag.String("iw", "", "Ignore the running applications on these Workspaces based on the workspace's name or id, e.g. \"special,10\"")
 var imgSize = flag.Int("i", 48, "Icon size")
 var launcherCmd = flag.String("c", "nwg-drawer", "Command assigned to the launcher button")
 var launcherPos = flag.String("lp", "end", "Launcher button position, 'start' or 'end'")
@@ -122,16 +118,9 @@ func buildMainBox() {
 		}
 	}
 
-	// delete the clients that are on ignored workspaces
-	clients = slices.DeleteFunc(clients, func(cl client) bool {
-		// only use the part in front of ":" if something like "special:scratch_term" is being used
-		clWorkspace, _, _ := strings.Cut(cl.Workspace.Name, ":")
-		return isIn(ignoredWorkspaces, strconv.Itoa(cl.Workspace.Id)) || isIn(ignoredWorkspaces, clWorkspace)
-	})
-
 	for _, cntTask := range clients {
-		if !isIn(allItems, cntTask.Class) && !strings.Contains(*launcherCmd, cntTask.Class) && cntTask.Class != "" {
-			allItems = append(allItems, cntTask.Class)
+		if !isIn(allItems, cntTask.AppId) && !strings.Contains(*launcherCmd, cntTask.AppId) && cntTask.AppId != "" {
+			allItems = append(allItems, cntTask.AppId)
 		}
 	}
 
@@ -167,21 +156,21 @@ func buildMainBox() {
 			instances := taskInstances(pin)
 			c := instances[0]
 
-			if isIn(classesToIgnore, c.Class) || isIn(alreadyAdded, c.Class) {
+			if isIn(classesToIgnore, c.AppId) || isIn(alreadyAdded, c.AppId) {
 				continue
 			}
 
 			button := taskButton(c, instances, position)
 			mainBox.PackStart(button, false, false, 0)
 
-			if c.Class == activeClient.Class && !*autohide {
+			if c.AppId == activeClient.AppId && !*autohide {
 				button.SetObjectProperty("name", "active")
 			} else {
 				button.SetObjectProperty("name", "")
 			}
 
-			clientMenu(c.Class, instances)
-			alreadyAdded = append(alreadyAdded, c.Class)
+			clientMenu(c.AppId, instances)
+			alreadyAdded = append(alreadyAdded, c.AppId)
 		} else {
 			button := pinnedButton(pin, position)
 			mainBox.PackStart(button, false, false, 0)
@@ -189,25 +178,25 @@ func buildMainBox() {
 	}
 
 	for _, t := range clients {
-		if isIn(classesToIgnore, t.Class) {
-			log.Debugf("Ignoring '%s'", t.Class)
+		if isIn(classesToIgnore, t.AppId) {
+			log.Debugf("Ignoring '%s'", t.AppId)
 			continue
 		}
 
-		instances := taskInstances(t.Class)
+		instances := taskInstances(t.AppId)
 
-		if !isIn(alreadyAdded, t.Class) {
+		if !isIn(alreadyAdded, t.AppId) {
 			button := taskButton(t, instances, position)
 			mainBox.PackStart(button, false, false, 0)
 
-			if t.Class == activeClient.Class && !*autohide {
+			if t.AppId == activeClient.AppId && !*autohide {
 				button.SetObjectProperty("name", "active")
 			} else {
 				button.SetObjectProperty("name", "")
 			}
 
-			clientMenu(t.Class, instances)
-			alreadyAdded = append(alreadyAdded, t.Class)
+			clientMenu(t.AppId, instances)
+			alreadyAdded = append(alreadyAdded, t.AppId)
 		}
 	}
 
@@ -340,26 +329,20 @@ func main() {
 		os.Exit(0)
 	}
 
-	his = os.Getenv("HYPRLAND_INSTANCE_SIGNATURE")
-	if his == "" {
-		log.Fatal("HYPRLAND_INSTANCE_SIGNATURE not found, terminating.")
-		os.Exit(1)
-	}
-	log.Debugf("HYPRLAND_INSTANCE_SIGNATURE: '%s'", his)
-
-	if os.Getenv("XDG_RUNTIME_DIR") != "" && pathExists(filepath.Join(os.Getenv("XDG_RUNTIME_DIR"), "hypr")) {
-		hyprDir = filepath.Join(os.Getenv("XDG_RUNTIME_DIR"), "hypr")
+	if os.Getenv("MANGO_INSTANCE_SIGNATURE") != "" {
+		mangoSocket = os.Getenv("MANGO_INSTANCE_SIGNATURE")
 	} else {
-		hyprDir = "/tmp/hypr"
+		log.Fatal("MANGO_INSTANCE_SIGNATURE is not set. Are you running mango?")
 	}
-	log.Debugf("hyprDir: '%s'", hyprDir)
 
 	if *autohide {
 		log.Info("Starting in autohiDe mode")
 	}
+
 	if *resident {
 		log.Info("Starting in resident mode")
 	}
+
 	if *ignoreClasses != "" {
 		log.Infof("Ignoring classes: '%s'", *ignoreClasses)
 		classesToIgnore = strings.Split(*ignoreClasses, " ")
@@ -494,10 +477,6 @@ func main() {
 	}
 	pinnedFile = filepath.Join(cacheDirectory, "nwg-dock-pinned")
 	cssFile := filepath.Join(configDirectory, *cssFileName)
-	ignoredWorkspaces = strings.Split(*ignoreWorkspaces, ",")
-	if *ignoreWorkspaces != "" {
-		log.Infof("Ignored workspaces: %s\n", strings.Join(ignoredWorkspaces, ","))
-	}
 
 	appDirs = getAppDirs()
 
@@ -601,6 +580,8 @@ func main() {
 	gtklayershell.SetMargin(win, gtklayershell.LayerShellEdgeRight, *marginRight)
 	gtklayershell.SetMargin(win, gtklayershell.LayerShellEdgeBottom, *marginBottom)
 
+	log.Info("		win.Connect(destroy, func() {()")
+
 	win.Connect("destroy", func() {
 		gtk.MainQuit()
 	})
@@ -637,8 +618,12 @@ func main() {
 		log.Fatalf("Couldn't list clients: %s", err)
 	}
 
+	log.Info("	buildMainBox()")
+
 	buildMainBox()
 	win.ShowAll()
+
+	log.Info("		win.ShowAll()")
 
 	if *autohide {
 		glib.TimeoutAdd(500, win.Hide)
@@ -702,7 +687,7 @@ func main() {
 	}()
 
 	addr := &net.UnixAddr{
-		Name: fmt.Sprintf("%s/%s/.socket2.sock", hyprDir, his),
+		Name: mangoSocket,
 		Net:  "unix",
 	}
 
@@ -723,7 +708,9 @@ func main() {
 			fmt.Println("Error connecting to the socket:", err)
 			os.Exit(1)
 		}
+
 		defer conn.Close()
+		conn.Write([]byte("watch focusing-client"))
 
 		for {
 			buf := make([]byte, 10240)
