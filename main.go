@@ -6,6 +6,7 @@ package main
 import "C"
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"net"
@@ -613,7 +614,7 @@ func main() {
 	mainBox = gtk.NewBox(innerOrientation, 0)
 	// We'll pack mainBox later, in buildMainBox
 
-	err = listClients()
+	err = updateClients()
 	if err != nil {
 		log.Fatalf("Couldn't list clients: %s", err)
 	}
@@ -692,6 +693,7 @@ func main() {
 	}
 
 	oldClients = clients
+
 	refreshMainBox := func() {
 		if len(clients) != len(oldClients) {
 			glib.TimeoutAdd(0, func() bool {
@@ -704,34 +706,31 @@ func main() {
 
 	go func() {
 		conn, err := net.DialUnix("unix", nil, addr)
+
 		if err != nil {
-			fmt.Println("Error connecting to the socket:", err)
-			os.Exit(1)
+			log.Fatalf("Error connecting to the socket: %s", err)
 		}
 
 		defer conn.Close()
-		conn.Write([]byte("watch focusing-client"))
+		conn.Write([]byte("watch all-clients\n"))
+
+		r := bufio.NewReader(conn)
 
 		for {
-			buf := make([]byte, 10240)
-			n, err := conn.Read(buf)
-			if err != nil {
-				fmt.Println("Error reading from socket2:", err)
+			if _, err = r.ReadString('\n'); err != nil {
+				log.Fatalf("Error reading: %s", err)
 			}
 
-			s := string(buf[:n])
-			if strings.Contains(s, "openwindow") || strings.Contains(s, "closewindow") {
-				winAddr := strings.TrimSpace(strings.Split(s, ">>")[1])
-				if winAddr != lastWinAddr {
-					err = listClients()
-					if err != nil {
-						log.Fatalf("Couldn't list clients: %s", err)
-					} else {
-						refreshMainBox()
-					}
-					lastWinAddr = winAddr
-				}
+			err = updateClients()
+
+			if err != nil {
+				log.Fatalf("Couldn't update clients: %s", err)
 			}
+
+			glib.IdleAdd(func() bool {
+				refreshMainBox()
+				return false
+			})
 		}
 	}()
 

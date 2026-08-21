@@ -975,7 +975,7 @@ func launch(ID string) {
 func mapOutputs() (map[string]*gdk.Monitor, error) {
 	result := make(map[string]*gdk.Monitor)
 
-	err := listMonitors()
+	err := updateMonitors()
 	if err != nil {
 		log.Fatalf("Error listing monitors: %v", err)
 	}

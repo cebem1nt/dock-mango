@@ -92,7 +92,7 @@ func mmsg(cmd string) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
-func listMonitors() error {
+func updateMonitors() error {
 	reply, err := mmsg("get all-monitors")
 	if err != nil {
 		return err
@@ -110,7 +110,7 @@ func listMonitors() error {
 	return nil
 }
 
-func listClients() error {
+func updateClients() error {
 	reply, err := mmsg("get all-clients")
 
 	if err != nil {
@@ -118,7 +118,7 @@ func listClients() error {
 	}
 
 	var resp struct {
-		Clients []client `json:"monitors"`
+		Clients []client `json:"clients"`
 	}
 
 	if err := json.Unmarshal(reply, &resp); err != nil {
@@ -144,7 +144,7 @@ func getActiveWindow() (*client, error) {
 }
 
 func focusWindow(window client) {
-	cmd := fmt.Sprintf("dispatch focusid, %s", window.Id)
+	cmd := fmt.Sprintf("dispatch focusid, %d", window.Id)
 	reply, _ := mmsg(cmd)
 
 	log.Debugf("%s -> %s", cmd, reply)
