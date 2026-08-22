@@ -351,13 +351,14 @@ func clientMenu(class string, instances []client) gtk.Menu {
 }
 
 func contextMenuActions(instance client, submenu *gtk.Menu) {
-	workspaceSubitem := gtk.NewMenuItemWithLabel("Move to workspace")
+	workspaceSubitem := gtk.NewMenuItemWithLabel("Tag")
 	workspaceSubmenu := gtk.NewMenu()
 
 	for i := 1; i < int(*numWS)+1; i++ {
 		workspace := gtk.NewMenuItemWithLabel(fmt.Sprintf("%v", i))
+
 		workspace.Connect("activate", func() {
-			moveWindowToWorkspace(instance, i)
+			tagWindow(instance, i)
 		})
 
 		workspaceSubmenu.Append(workspace)
@@ -676,7 +677,7 @@ func getAppDirs() []string {
 	return dirs
 }
 
-func isIn(slice []string, val string) bool {
+func isIn[T comparable](slice []T, val T) bool {
 	for _, item := range slice {
 		if item == val {
 			return true

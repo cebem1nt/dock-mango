@@ -581,8 +581,6 @@ func main() {
 	gtklayershell.SetMargin(win, gtklayershell.LayerShellEdgeRight, *marginRight)
 	gtklayershell.SetMargin(win, gtklayershell.LayerShellEdgeBottom, *marginBottom)
 
-	log.Info("		win.Connect(destroy, func() {()")
-
 	win.Connect("destroy", func() {
 		gtk.MainQuit()
 	})
@@ -619,12 +617,8 @@ func main() {
 		log.Fatalf("Couldn't list clients: %s", err)
 	}
 
-	log.Info("	buildMainBox()")
-
 	buildMainBox()
 	win.ShowAll()
-
-	log.Info("		win.ShowAll()")
 
 	if *autohide {
 		glib.TimeoutAdd(500, win.Hide)

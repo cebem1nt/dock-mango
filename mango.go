@@ -144,35 +144,35 @@ func getActiveWindow() (*client, error) {
 }
 
 func focusWindow(window client) {
-	cmd := fmt.Sprintf("dispatch focusid, %d", window.Id)
+	cmd := fmt.Sprintf("dispatch focusid, client, %d", window.Id)
 	reply, _ := mmsg(cmd)
 
 	log.Debugf("%s -> %s", cmd, reply)
 }
 
 func closeWindow(window client) {
-	cmd := fmt.Sprintf("dispatch killid, %d", window.Id)
+	cmd := fmt.Sprintf("dispatch killclient, client, %d", window.Id)
 	reply, _ := mmsg(cmd)
 
 	log.Debugf("%s -> %s", cmd, reply)
 }
 
 func floatWindow(window client) {
-	cmd := fmt.Sprintf("dispatch togglefloatingid, %d", window.Id)
+	cmd := fmt.Sprintf("dispatch togglefloating, client, %d", window.Id)
 	reply, _ := mmsg(cmd)
 
 	log.Debugf("%s -> %s", cmd, reply)
 }
 
 func fullscreenWindow(window client) {
-	cmd := fmt.Sprintf("dispatch togglefullscreenid, %d", window.Id)
+	cmd := fmt.Sprintf("dispatch togglefullscreen, client, %d", window.Id)
 	reply, _ := mmsg(cmd)
 
 	log.Debugf("%s -> %s", cmd, reply)
 }
 
-func moveWindowToWorkspace(window client, workspace int) {
-	cmd := fmt.Sprintf("dispatch tagid, %d, %d, 0", window.Id, workspace)
+func tagWindow(window client, workspace int) {
+	cmd := fmt.Sprintf("dispatch tag, client, %d, %d, 0", window.Id, workspace)
 	reply, _ := mmsg(cmd)
 
 	log.Debugf("%s -> %s", cmd, reply)
