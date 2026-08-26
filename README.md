@@ -49,13 +49,13 @@ you could use the same key to open and close the dock.
 If you run the program with the `-d` or `-r` argument (preferably in autostart), it will be running residently.
 
 ```text
-exec_always dock-mango -d
+exec-once = dock-mango -d
 ```
 
 or
 
 ```text
-exec_always dock-mango -r
+exec-once = dock-mango -r
 ```
 
 ### `-d` for autohiDe
@@ -76,7 +76,7 @@ Re-execution of the command with the `-d` or `-r` argument won't kill the runnin
 running residently, another instance will just exit with 0 code. In case you'd like to terminate it anyway, you need 
 to `pkill -f dock-mango`.
 
-*NOTE: you need to kill the running instance before reloading Hyprland, if you've just changed the arguments you
+*NOTE: you need to kill the running instance before reloading Mango, if you've just changed the arguments you
 auto-start the dock with.*
 
 ```txt
