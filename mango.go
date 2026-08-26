@@ -10,10 +10,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type Monitor struct {
-	Name string `json:"name"`
-}
-
 type Client struct {
 	Id    int    `json:"id"`
 	Pid   int    `json:"pid"`

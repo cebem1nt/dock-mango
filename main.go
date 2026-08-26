@@ -398,6 +398,7 @@ func main() {
 	}()
 
 	var err error
+
 	if !*allowMultipleInstances {
 		log.Debug("Allowing only one instance of nwg-dock-hyprland")
 		// If running instance found, send sigToggle to it.
@@ -407,15 +408,16 @@ func main() {
 		// Use md5-hashed $USER name to create unique lock files for multiple users
 		lockFilePath := fmt.Sprintf("%s/nwg-dock-%s.lock", tempDir(), md5Hash(os.Getenv("USER")))
 		lockFile, e := singleinstance.CreateLockFile(lockFilePath)
+
 		if e != nil {
-			pid, err := readTextFile(lockFilePath)
+			content, err := readTextFile(lockFilePath)
 			if err == nil {
-				i, err := strconv.Atoi(pid)
+				pid, err := strconv.Atoi(content)
 				if err == nil {
 					if *autohide || *resident {
 						log.Info("Running instance found, terminating...")
 					} else {
-						_ = syscall.Kill(i, sigToggle)
+						_ = syscall.Kill(pid, sigToggle)
 						log.Info("Sending sigToggle to running instance and bye, bye!")
 					}
 				}
@@ -424,6 +426,7 @@ func main() {
 			}
 			os.Exit(0)
 		}
+
 		defer lockFile.Close()
 	}
 

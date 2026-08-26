@@ -1,10 +1,25 @@
+@define-color background        rgba(8, 8, 11, 0.9);
+@define-color menu-bg           rgba(16, 16, 16, 0.9);
+@define-color button-bg         #101010;
+@define-color fg                #acb0d0;
+@define-color highlight         #787c99;
+@define-color button-highlight  #acb0d0;
+
+* {
+    border: none;
+    outline: none;
+    box-shadow: none;
+}
+
 window {
-    background: rgba(8, 8, 11, 0.9);
-    border-radius: 55px;
+    border-radius: 30px;
+    background: transparent;
 }
 
 #box {
-	padding: 20px 10px;
+	padding: 10px 5px;
+    background: @background;
+    border-radius: 30px;
 }
 
 button, image {
@@ -14,22 +29,22 @@ button, image {
 
 button {
     border-radius: 100%;
-    padding: 7px;
-    background: #101010;
-    margin: 5px; 
+    padding: 6px;
+    background: @button-bg;
+    margin: 2px; 
 }
 
 button:hover {
-	background: #acb0d0;
+	background: @button-highlight;
 }
 
 button:focus {
-    background: #101010;
+    background: @button-bg;
 }
 
 tooltip {
     border-radius: 15px;
-    background: rgba(8, 8, 11, 0.9);
+    background: @background;
     border: none;
     outline: none;
     box-shadow: none;
@@ -38,21 +53,28 @@ tooltip {
 tooltip label {
     padding: 2px 10px;
 	font-weight: bold;
-    color: #acb0d0;
+    color: @fg;
+    border: none;
+    outline: none;
 }
 
 menu {
     border-radius: 10px;
     font-weight: 700;
-    color: #acb0d0;
+    background: @menu-bg;
+    color: @fg;
+    padding: 0;
 }
 
 menu > * {
     padding: 3px 0px;
+    min-width: 5px;
 }
 
 menu > *:hover {
     border-radius: 10px;
-    background-color: #787c99;
+    background-color: @highlight;
+    border: none;
+    outline: none;
+    box-shadow: none;
 }
-
