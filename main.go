@@ -62,7 +62,7 @@ var (
 
 // Flags
 var alignment = flag.String("a", "center", "Alignment in full width/height: \"start\", \"center\" or \"end\"")
-var autohide = flag.Bool("d", false, "auto-hiDe: show dock when hotspot hovered, close when left or a button clicked")
+var autohide = flag.Bool("d", false, "auto-hiDe: show dock when hotspot clicked, close when left or a button clicked")
 var cssFileName = flag.String("s", "style.css", "Styling: css file name")
 var debug = flag.Bool("debug", false, "turn on debug messages")
 var displayVersion = flag.Bool("v", false, "display Version information")
