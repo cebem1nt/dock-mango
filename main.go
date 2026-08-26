@@ -36,9 +36,9 @@ const (
 )
 
 var (
-	activeClient                       *client
+	activeClient                       *Client
 	appDirs                            []string
-	clients                            []client
+	clients                            []Client
 	configDirectory                    string
 	dataHome                           string
 	detectorEnteredAt                  int64
@@ -46,8 +46,7 @@ var (
 	imgSizeScaled                      int
 	lastWinAddr                        string
 	mainBox                            *gtk.Box
-	monitors                           []monitor
-	oldClients                         []client
+	oldClients                         []Client
 	outerOrientation, innerOrientation gtk.Orientation
 	pinned                             []string
 	pinnedFile                         string
@@ -85,7 +84,6 @@ var noLauncher = flag.Bool("nolauncher", false, "don't show the launcher button"
 var numWS = flag.Int64("w", 10, "number of Workspaces you use")
 var position = flag.String("p", "bottom", "Position: \"bottom\", \"top\" \"left\" or \"right\"")
 var resident = flag.Bool("r", false, "Leave the program resident, but w/o hotspot")
-var targetOutput = flag.String("o", "", "name of Output to display the dock on")
 var allowMultipleInstances = flag.Bool("m", false, "allow Multiple instances of the dock (skip lock file check)")
 
 var vertical bool
@@ -212,12 +210,11 @@ func buildMainBox() {
 	mainBox.ShowAll()
 }
 
-func setupHotSpot(monitor gdk.Monitor, dockWindow *gtk.Window) gtk.Window {
+func setupHotSpot(dockWindow *gtk.Window) gtk.Window {
 	w, h := dockWindow.Size()
 	win := gtk.NewWindow(gtk.WindowToplevel)
 
 	gtklayershell.InitForWindow(win)
-	gtklayershell.SetMonitor(win, &monitor)
 	gtklayershell.SetNamespace(win, "hotspot")
 
 	var box *gtk.Box
@@ -360,19 +357,6 @@ func main() {
 			case syscall.SIGTERM:
 				log.Info("SIGTERM received, bye bye!")
 				gtk.MainQuit()
-			case syscall.SIGUSR1:
-				log.Warn("SIGUSR1 for toggling visibility is deprecated, use SIGRTMIN+1")
-				if *resident || *autohide {
-					if !win.IsVisible() {
-						log.Debug("SIGUSR1 received, showing the window")
-						windowStateChannel <- WindowShow
-					} else {
-						log.Debug("SIGUSR1 received, hiding the window")
-						windowStateChannel <- WindowHide
-					}
-				} else {
-					log.Debugf("SIGUSR1 received, but I'm not resident, ignoring")
-				}
 			case sigToggle:
 				if *resident || *autohide {
 					if !win.IsVisible() {
@@ -502,30 +486,6 @@ func main() {
 	gtklayershell.InitForWindow(win)
 	gtklayershell.SetNamespace(win, "nwg-dock")
 
-	var output2mon map[string]*gdk.Monitor
-	output2mon, err = mapOutputs()
-	_, targetOutputExists := output2mon[*targetOutput]
-	if !targetOutputExists {
-		if *targetOutput != "" {
-			log.Warnf("Target output '%s' not found, ignoring", *targetOutput)
-		} else {
-			log.Debug("No target output specified, using the focused one")
-		}
-	} else {
-		log.Debugf("Creating widow on specified output: %s", *targetOutput)
-	}
-
-	if *targetOutput != "" {
-		// We want to assign gtklayershell to a monitor, but we only know the output name!
-		if err == nil {
-			if targetOutputExists {
-				gtklayershell.SetMonitor(win, output2mon[*targetOutput])
-			}
-		} else {
-			log.Warn(fmt.Sprintf("Couldn't assign gtklayershell to monitor: %s", err))
-		}
-	}
-
 	if *exclusive {
 		gtklayershell.AutoExclusiveZoneEnable(win)
 		*layer = "top"
@@ -610,15 +570,13 @@ func main() {
 	outerBox.PackStart(alignmentBox, true, true, 0)
 
 	mainBox = gtk.NewBox(innerOrientation, 0)
+	var hotspot gtk.Window
 	// We'll pack mainBox later, in buildMainBox
 
 	err = updateClients()
 	if err != nil {
 		log.Fatalf("Couldn't list clients: %s", err)
 	}
-
-	buildMainBox()
-	win.ShowAll()
 
 	if *autohide {
 		glib.TimeoutAdd(500, win.Hide)
@@ -642,27 +600,16 @@ func main() {
 			log.Warn(err)
 		}
 
-		if *targetOutput == "" || !targetOutputExists {
-			// hot spots on all displays
-			monitors, _ := listGdkMonitors()
-			for _, monitor := range monitors {
-				win := setupHotSpot(monitor, win)
+		hotspot = setupHotSpot(win)
 
-				ctx := win.StyleContext()
-				ctx.AddProvider(mRefProvider, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+		ctx := hotspot.StyleContext()
+		ctx.AddProvider(mRefProvider, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
-				win.ShowAll()
-			}
-		} else {
-			// hot spot on the selected display only
-			monitor := output2mon[*targetOutput]
-			win := setupHotSpot(*monitor, win)
-			ctx := win.StyleContext()
-			ctx.AddProvider(mRefProvider, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
-
-			win.ShowAll()
-		}
+		hotspot.ShowAll()
 	}
+
+	buildMainBox()
+	win.ShowAll()
 
 	go func() {
 		for {

@@ -18,13 +18,15 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func taskInstances(ID string) []client {
-	var found []client
+func taskInstances(ID string) []Client {
+	var found []Client
+
 	for _, c := range clients {
 		if strings.ToUpper(c.AppId) == strings.ToUpper(ID) {
 			found = append(found, c)
 		}
 	}
+
 	return found
 }
 
@@ -200,7 +202,7 @@ func cancelClose() {
 	}
 }
 
-func taskButton(t client, instances []client, position *string) *gtk.Box {
+func taskButton(t Client, instances []Client, position *string) *gtk.Box {
 	vertical = *position == "left" || *position == "right"
 
 	box := gtk.NewBox(gtk.OrientationVertical, 0)
@@ -319,7 +321,7 @@ func taskButton(t client, instances []client, position *string) *gtk.Box {
 	return box
 }
 
-func clientMenu(class string, instances []client) gtk.Menu {
+func clientMenu(class string, instances []Client) gtk.Menu {
 	menu := gtk.NewMenu()
 
 	iconName, err := getIcon(class)
@@ -350,7 +352,7 @@ func clientMenu(class string, instances []client) gtk.Menu {
 	return *menu
 }
 
-func contextMenuActions(instance client, submenu *gtk.Menu) {
+func contextMenuActions(instance Client, submenu *gtk.Menu) {
 	workspaceSubitem := gtk.NewMenuItemWithLabel("Tag")
 	workspaceSubmenu := gtk.NewMenu()
 
@@ -400,7 +402,7 @@ func contextMenuActions(instance client, submenu *gtk.Menu) {
 	}
 }
 
-func clientMenuContext(class string, instances []client) gtk.Menu {
+func clientMenuContext(class string, instances []Client) gtk.Menu {
 	menu := gtk.NewMenu()
 	pinItem := gtk.NewMenuItem()
 
@@ -970,40 +972,6 @@ func launch(ID string) {
 	if _, err := mmsg(cmd); err != nil {
 		log.Error("Unable to launch command!", err.Error())
 	}
-}
-
-// Returns map output name -> gdk.Monitor
-func mapOutputs() (map[string]*gdk.Monitor, error) {
-	result := make(map[string]*gdk.Monitor)
-
-	err := updateMonitors()
-	if err != nil {
-		log.Fatalf("Error listing monitors: %v", err)
-	}
-
-	display := gdk.DisplayGetDefault()
-	if err != nil {
-		log.Fatalf("Error finding default GDK display: %v", err)
-	}
-
-	num := display.NMonitors()
-	for i := 0; i < num; i++ {
-		mon := display.Monitor(i)
-		result[monitors[i].Name] = mon
-	}
-	return result, nil
-}
-
-func listGdkMonitors() ([]gdk.Monitor, error) {
-	var monitors []gdk.Monitor
-	display := gdk.DisplayGetDefault()
-
-	num := display.NMonitors()
-	for i := 0; i < num; i++ {
-		monitor := display.Monitor(i)
-		monitors = append(monitors, *monitor)
-	}
-	return monitors, nil
 }
 
 // Returns output of a CLI command with optional arguments
