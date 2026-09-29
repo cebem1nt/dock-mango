@@ -1,6 +1,6 @@
 # Maintainer: cebem1nt <cebem1nt@gmail.com>
 
-pkgname=dock-mango
+pkgname=dock-mango-git
 pkgver=0.0.r0.g0000000
 pkgrel=1
 pkgdesc="GTK3-based dock for mangowm"
