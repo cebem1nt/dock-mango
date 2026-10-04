@@ -11,11 +11,12 @@ import (
 )
 
 type Client struct {
-	Id    int    `json:"id"`
-	Pid   int    `json:"pid"`
-	Title string `json:"title"`
-	AppId string `json:"appid"`
-	Tags  []int  `json:"tags"`
+	Id          int    `json:"id"`
+	Pid         int    `json:"pid"`
+	IsMinimized bool   `json:"is_minimized"`
+	Title       string `json:"title"`
+	AppId       string `json:"appid"`
+	Tags        []int  `json:"tags"`
 }
 
 func mmsg(cmd string) ([]byte, error) {
@@ -102,6 +103,13 @@ func fullscreenWindow(window Client) {
 	cmd := fmt.Sprintf("dispatch togglefullscreen, client, %d", window.Id)
 	reply, _ := mmsg(cmd)
 
+	log.Debugf("%s -> %s", cmd, reply)
+}
+
+func minimizeWindow(window Client) {
+	cmd := fmt.Sprintf("dispatch minimized, client, %d", window.Id)
+
+	reply, _ := mmsg(cmd)
 	log.Debugf("%s -> %s", cmd, reply)
 }
 

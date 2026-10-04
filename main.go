@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"syscall"
@@ -637,14 +638,12 @@ func main() {
 
 	oldClients = clients
 
-	refreshMainBox := func() {
-		if len(clients) != len(oldClients) {
-			glib.TimeoutAdd(0, func() bool {
-				buildMainBox()
-				oldClients = clients
-				return false
-			})
-		}
+	scheduleRefreshMainBox := func() {
+		glib.TimeoutAdd(0, func() bool {
+			buildMainBox()
+			oldClients = clients
+			return false
+		})
 	}
 
 	go func() {
@@ -671,7 +670,16 @@ func main() {
 			}
 
 			glib.IdleAdd(func() bool {
-				refreshMainBox()
+				if len(clients) != len(oldClients) {
+					scheduleRefreshMainBox()
+				} else {
+					for i := 0; i < len(clients); i++ {
+						if !reflect.DeepEqual(clients[i], oldClients[i]) {
+							scheduleRefreshMainBox()
+							return false
+						}
+					}
+				}
 				return false
 			})
 		}

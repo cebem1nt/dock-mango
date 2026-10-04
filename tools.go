@@ -318,6 +318,13 @@ func taskButton(t Client, instances []Client, position *string) *gtk.Box {
 		}
 	})
 
+	for _, client := range instances {
+		if client.IsMinimized {
+			button.StyleContext().AddClass("minimized")
+			break
+		}
+	}
+
 	return box
 }
 
@@ -328,6 +335,7 @@ func clientMenu(class string, instances []Client) gtk.Menu {
 	if err != nil {
 		log.Warn(err)
 	}
+
 	for _, instance := range instances {
 		menuItem := gtk.NewMenuItem()
 		hbox := gtk.NewBox(gtk.OrientationHorizontal, 6)
@@ -337,8 +345,13 @@ func clientMenu(class string, instances []Client) gtk.Menu {
 		if len(title) > 25 {
 			title = title[:25]
 		}
-		var label *gtk.Label
-		label = gtk.NewLabel(fmt.Sprintf("%s (%v)", title, instance.Tags))
+
+		labelText := fmt.Sprintf("%s %v", title, instance.Tags)
+		if instance.IsMinimized {
+			labelText = fmt.Sprintf("%s (minimized)", title)
+		}
+
+		label := gtk.NewLabel(labelText)
 		hbox.PackStart(label, false, false, 0)
 		menuItem.Add(hbox)
 		menu.Append(menuItem)
@@ -346,14 +359,24 @@ func clientMenu(class string, instances []Client) gtk.Menu {
 		menuItem.Connect("activate", func() {
 			focusWindow(instance)
 		})
-
 	}
+
 	menu.ShowAll()
 	return *menu
 }
 
 func contextMenuActions(instance Client, submenu *gtk.Menu) {
-	workspaceSubitem := gtk.NewMenuItemWithLabel("Tag")
+	subitem := gtk.NewMenuItemWithLabel("Close")
+	subitem.Connect("activate", func() {
+		closeWindow(instance)
+	})
+
+	submenu.Append(subitem)
+
+	if instance.IsMinimized {
+		return
+	}
+
 	workspaceSubmenu := gtk.NewMenu()
 
 	for i := 1; i < int(*numWS)+1; i++ {
@@ -366,17 +389,19 @@ func contextMenuActions(instance Client, submenu *gtk.Menu) {
 		workspaceSubmenu.Append(workspace)
 	}
 
-	workspaceSubitem.SetSubmenu(workspaceSubmenu)
 	workspaceSubitemIsAppended := false
+	workspaceSubitem := gtk.NewMenuItemWithLabel("Tag")
+
+	workspaceSubitem.SetSubmenu(workspaceSubmenu)
 
 	if *position == "top" || *position == "bottom" {
 		submenu.Append(workspaceSubitem)
 		workspaceSubitemIsAppended = true
 	}
 
-	subitem := gtk.NewMenuItemWithLabel("Close window")
+	subitem = gtk.NewMenuItemWithLabel("Minimize")
 	subitem.Connect("activate", func() {
-		closeWindow(instance)
+		minimizeWindow(instance)
 	})
 
 	submenu.Append(subitem)
@@ -397,50 +422,13 @@ func contextMenuActions(instance Client, submenu *gtk.Menu) {
 		focusWindow(instance)
 	})
 
-	if !workspaceSubitemIsAppended {
+	if !workspaceSubitemIsAppended && !instance.IsMinimized {
 		submenu.Append(workspaceSubitem)
 	}
 }
 
 func clientMenuContext(class string, instances []Client) gtk.Menu {
 	menu := gtk.NewMenu()
-	pinItem := gtk.NewMenuItem()
-
-	if !inPinned(class) {
-		pinItem.SetLabel("Pin")
-		pinItem.Connect("activate", func() {
-			log.Infof("pin %s", class)
-			pinTask(class)
-		})
-	} else {
-		pinItem.SetLabel("Unpin")
-		pinItem.Connect("activate", func() {
-			log.Infof("unpin %s", class)
-			unpinTask(class)
-		})
-	}
-
-	menu.Append(pinItem)
-
-	item := gtk.NewMenuItemWithLabel("New window")
-	item.Connect("activate", func() {
-		launch(class)
-	})
-
-	menu.Append(item)
-
-	if len(instances) > 1 {
-		closeAllWindows := gtk.NewMenuItem()
-		closeAllWindows.SetLabel("Close all windows")
-
-		closeAllWindows.Connect("activate", func() {
-			for _, instance := range instances {
-				closeWindow(instance)
-			}
-		})
-
-		menu.Append(closeAllWindows)
-	}
 
 	if len(instances) > 1 {
 		iconName, err := getIcon(class)
@@ -463,7 +451,12 @@ func clientMenuContext(class string, instances []Client) gtk.Menu {
 			contextSubMenu := gtk.NewMenu()
 			contextMenuActions(instance, contextSubMenu)
 
-			label := gtk.NewLabel(fmt.Sprintf("%s (%v)", title, instance.Tags))
+			labelText := fmt.Sprintf("%s %v", title, instance.Tags)
+			if instance.IsMinimized {
+				labelText = fmt.Sprintf("%s (minimized)", title)
+			}
+
+			label := gtk.NewLabel(labelText)
 			hbox.PackStart(label, false, false, 0)
 			menuItem.Add(hbox)
 			menuItem.SetSubmenu(contextSubMenu)
@@ -477,6 +470,44 @@ func clientMenuContext(class string, instances []Client) gtk.Menu {
 	} else {
 		contextMenuActions(instances[0], menu)
 	}
+
+	item := gtk.NewMenuItemWithLabel("New window")
+	item.Connect("activate", func() {
+		launch(class)
+	})
+
+	menu.Append(item)
+
+	if len(instances) > 1 {
+		closeAllWindows := gtk.NewMenuItem()
+		closeAllWindows.SetLabel("Close all windows")
+
+		closeAllWindows.Connect("activate", func() {
+			for _, instance := range instances {
+				closeWindow(instance)
+			}
+		})
+
+		menu.Append(closeAllWindows)
+	}
+
+	pinItem := gtk.NewMenuItem()
+
+	if !inPinned(class) {
+		pinItem.SetLabel("Pin")
+		pinItem.Connect("activate", func() {
+			log.Infof("pin %s", class)
+			pinTask(class)
+		})
+	} else {
+		pinItem.SetLabel("Unpin")
+		pinItem.Connect("activate", func() {
+			log.Infof("unpin %s", class)
+			unpinTask(class)
+		})
+	}
+
+	menu.Append(pinItem)
 
 	menu.ShowAll()
 	return *menu
