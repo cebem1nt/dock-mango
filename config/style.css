@@ -1,9 +1,10 @@
-@define-color background        rgba(8, 8, 11, 0.9);
+@define-color background        rgba(8, 8, 11, 0.75);
 @define-color menu-bg           rgba(16, 16, 16, 0.9);
-@define-color button-bg         #101010;
+@define-color button-bg         rgba(16, 0, 0, 0.3);
 @define-color fg                #acb0d0;
-@define-color highlight         #787c99;
-@define-color button-highlight  #acb0d0;
+@define-color highlight         rgba(120, 124, 153, 0.25);
+@define-color button-highlight  rgba(120, 124, 153, 0.30);
+@define-color border            #252525;
 
 * {
     border: none;
@@ -12,14 +13,15 @@
 }
 
 window {
-    border-radius: 30px;
+    border-radius: 29px;
     background: transparent;
 }
 
 #box {
-	padding: 10px 5px;
+	padding: 8px 4px;
     background: @background;
-    border-radius: 30px;
+    border-radius: 29px;
+    border: 1px solid @border;
 }
 
 button, image {
@@ -42,12 +44,16 @@ button:focus {
     background: @button-bg;
 }
 
+button.minimized image {
+    -gtk-icon-effect: dim;
+}
+
 tooltip {
     border-radius: 15px;
     background: @background;
-    border: none;
     outline: none;
     box-shadow: none;
+    border: 1px solid @border;
 }
 
 tooltip label {
@@ -59,7 +65,8 @@ tooltip label {
 }
 
 menu {
-    border-radius: 10px;
+    border: 1px solid @border;
+    border-radius: 14px;
     font-weight: 700;
     background: @menu-bg;
     color: @fg;
@@ -69,11 +76,24 @@ menu {
 menu > * {
     padding: 3px 0px;
     min-width: 5px;
+    border-radius: 6px;
+}
+
+menu > *:last-child {
+    border-radius: 0 0 14px 14px;
+}
+
+menu > *:first-child {
+    border-radius: 14px 14px 0 0;
+}
+
+menu > *:last-child:first-child {
+    border-radius: 14px;
 }
 
 menu > *:hover {
-    border-radius: 10px;
     background-color: @highlight;
+    color: @fg;
     border: none;
     outline: none;
     box-shadow: none;
